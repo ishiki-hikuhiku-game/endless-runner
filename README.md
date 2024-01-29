@@ -47,10 +47,6 @@ npm test -- --safari
 
 - The `tests` folder contains your Rust unit tests.
 
-## 開発中の注意
+## ゲームを遊ぶ
 
-rust-analyzer と webpack が同時に動いているからなのか、
-メモリが 16gb の macbook 程度の環境だと、
-動きが止まることがよくある（ファイルロックなどでデッドロックが発生しているらしい）。
-
-node_modules と target（and/or）を消して、`npm install`や`npm run start`をやり直すと動く。
+https://endless-running.netlify.app/
