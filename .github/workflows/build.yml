@@ -11,6 +11,9 @@ jobs:
         with:
           toolchain: 1.75.0
           target: wasm32-unknown-unknown
-          override: true
           components: clippy
       - run: cargo install wasm-pack --version 0.9.1
+      - name: Annotate commit with clippy warnings
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
