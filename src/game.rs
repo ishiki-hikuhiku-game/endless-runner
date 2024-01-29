@@ -135,6 +135,7 @@ impl WalkTheDogState<Ready> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum WalkingEndState {
     Complete(WalkTheDogState<GameOver>),
     Continue(WalkTheDogState<Walking>),
@@ -175,7 +176,7 @@ impl WalkTheDogState<Walking> {
             let receiver =
                 browser::draw_ui("<button id=\"new-game\" type=\"button\">New Game</button>")
                     .and_then(|_unit| browser::find_html_elemebt_by_id("new-game"))
-                    .map(|element| engine::add_click_handler(element))
+                    .map(engine::add_click_handler)
                     .unwrap();
             WalkingEndState::Complete(WalkTheDogState {
                 _state: GameOver {
@@ -192,6 +193,7 @@ impl WalkTheDogState<Walking> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum GameOverEndState {
     Complete(WalkTheDogState<Ready>),
     Continue(WalkTheDogState<GameOver>),
@@ -642,12 +644,12 @@ impl RedHatBoyStateMachine {
      */
     fn context(&self) -> &RedHatBoyContext {
         match self {
-            RedHatBoyStateMachine::Idle(state) => &state.context(),
-            RedHatBoyStateMachine::Running(state) => &state.context(),
-            RedHatBoyStateMachine::Jumping(state) => &state.context(),
-            RedHatBoyStateMachine::Sliding(state) => &state.context(),
-            RedHatBoyStateMachine::Falling(state) => &state.context(),
-            RedHatBoyStateMachine::KnockedOut(state) => &state.context(),
+            RedHatBoyStateMachine::Idle(state) => state.context(),
+            RedHatBoyStateMachine::Running(state) => state.context(),
+            RedHatBoyStateMachine::Jumping(state) => state.context(),
+            RedHatBoyStateMachine::Sliding(state) => state.context(),
+            RedHatBoyStateMachine::Falling(state) => state.context(),
+            RedHatBoyStateMachine::KnockedOut(state) => state.context(),
         }
     }
 }
@@ -659,13 +661,13 @@ mod red_hat_boy_states {
 
     use crate::{
         engine::{Audio, Point, Sound},
-        sound::LOOPING,
+        sound::Looping,
     };
 
     use super::{RedHatBoyStateMachine, BACKGROUND_MUSIC_NODENAME, CANVAS_SIZE};
 
     const FLOOR: i16 = 479;
-    const PLAYER_HEIGHT: i16 = (CANVAS_SIZE as i16) - FLOOR;
+    const PLAYER_HEIGHT: i16 = CANVAS_SIZE - FLOOR;
     const STATING_POINT: i16 = -20;
     const IDLE_FRAME_NAME: &str = "Idle";
     const RUN_FRAME_NAME: &str = "Run";
@@ -746,7 +748,7 @@ mod red_hat_boy_states {
             music: Rc<Sound>,
             sound_nodes: &mut HashMap<String, Rc<AudioBufferSourceNode>>,
         ) -> RedHatBoyState<Running> {
-            let audio_node = audio.play_sound(&music, LOOPING::YES).unwrap();
+            let audio_node = audio.play_sound(&music, Looping::Yes).unwrap();
             sound_nodes.insert(String::from(BACKGROUND_MUSIC_NODENAME), Rc::new(audio_node));
             RedHatBoyState {
                 context: self.context.reset_frame().run_right(),
@@ -773,7 +775,7 @@ mod red_hat_boy_states {
         }
 
         pub fn jump(self, audio: Rc<Audio>, sound: Rc<Sound>) -> RedHatBoyState<Jumping> {
-            audio.play_sound(&sound, LOOPING::NO).unwrap();
+            audio.play_sound(&sound, Looping::No).unwrap();
             RedHatBoyState {
                 context: self
                     .context
@@ -806,7 +808,7 @@ mod red_hat_boy_states {
         pub fn update(mut self) -> JumpingEndstate {
             self.context = self.context.update(JUMPING_FRAME);
             if self.context.position.y >= FLOOR {
-                JumpingEndstate::Complete(self.land_on(CANVAS_SIZE.into()))
+                JumpingEndstate::Complete(self.land_on(CANVAS_SIZE))
             } else {
                 JumpingEndstate::Jumping(self)
             }
@@ -1146,11 +1148,11 @@ impl From<Image> for Barrier {
     }
 }
 
-fn rightmost(obstacl_list: &Vec<Box<dyn Obstacle<RedHatBoy>>>) -> i16 {
+fn rightmost(obstacl_list: &[Box<dyn Obstacle<RedHatBoy>>]) -> i16 {
     obstacl_list
         .iter()
         .map(|obstacle| obstacle.right())
-        .max_by(|x, y| x.cmp(&y))
+        .max_by(|x, y| x.cmp(y))
         .unwrap_or(0)
 }
 

@@ -13,7 +13,7 @@ use web_sys::{
 };
 
 use crate::browser::{self, LoopClosure};
-use crate::sound::{self, LOOPING};
+use crate::sound::{self, Looping};
 
 pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     let image = browser::new_image()?;
@@ -31,7 +31,9 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     // optの中身(あれば）にsend(Ok())がなされる
     let success_callback = Closure::once(Box::new(move || {
         if let Some(success_tx) = success_tx.lock().ok().and_then(|mut opt| opt.take()) {
-            success_tx.send(Ok(()));
+            success_tx
+                .send(Ok(()))
+                .expect("can not send success message");
         }
     }));
     // let success_callback = browser::closure_once(move || {
@@ -41,7 +43,9 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     // });
     let error_callback: Closure<dyn FnMut(JsValue)> = Closure::once(Box::new(move |err| {
         if let Some(error_tx) = error_tx.lock().ok().and_then(|mut opt| opt.take()) {
-            error_tx.send(Err(anyhow!("Error loading Image: {:#?}", err)));
+            error_tx
+                .send(Err(anyhow!("Error loading Image: {:#?}", err)))
+                .expect("can not send error message");
         }
     }));
     // let error_callback: Closure<dyn FnMut(JsValue)> = browser::closure_once(move |err| {
@@ -134,7 +138,7 @@ pub struct Rect {
 }
 
 impl Rect {
-    pub fn new(position: Point, width: i16, height: i16) -> Self {
+    pub const fn new(position: Point, width: i16, height: i16) -> Self {
         Rect {
             position,
             width,
@@ -143,11 +147,7 @@ impl Rect {
     }
 
     pub const fn new_from_x_y(x: i16, y: i16, width: i16, height: i16) -> Self {
-        Rect {
-            position: Point { x, y },
-            width,
-            height,
-        }
+        Rect::new(Point { x, y }, width, height)
     }
 
     pub fn x(&self) -> i16 {
@@ -172,10 +172,6 @@ impl Rect {
     pub fn right(&self) -> i16 {
         self.x() + self.width
     }
-
-    pub fn bottom(&self) -> i16 {
-        self.y() + self.height
-    }
 }
 
 impl Renderer {
@@ -191,7 +187,7 @@ impl Renderer {
     pub fn draw_image(&self, image: &HtmlImageElement, frame: &Rect, destination: &Rect) {
         self.context
             .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
-                &image,
+                image,
                 frame.x().into(),
                 frame.y().into(),
                 frame.width.into(),
@@ -278,12 +274,14 @@ fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
     let onkeydown = browser::closure_wrap(Box::new(move |keycode: web_sys::KeyboardEvent| {
         keydown_sender
             .borrow_mut()
-            .start_send(KeyPress::KeyDown(keycode));
+            .start_send(KeyPress::KeyDown(keycode))
+            .expect("can not send keydown message");
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
     let onkeyup = browser::closure_wrap(Box::new(move |keycode: web_sys::KeyboardEvent| {
         keyup_sender
             .borrow_mut()
-            .start_send(KeyPress::KeyUp(keycode));
+            .start_send(KeyPress::KeyUp(keycode))
+            .expect("can not send keyup message");
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
     browser::canvas()
         .unwrap()
@@ -313,7 +311,7 @@ impl KeyState {
         self.pressed_keys.insert(code.into(), event);
     }
     fn set_released(&mut self, code: &str) {
-        self.pressed_keys.remove(code.into());
+        self.pressed_keys.remove(code);
     }
 }
 
@@ -358,9 +356,6 @@ impl Image {
     pub fn right(&self) -> i16 {
         self.position.x + self.element.width() as i16
     }
-    pub fn bottom(&self) -> i16 {
-        self.position.y + self.element.height() as i16
-    }
 }
 
 pub struct Collider {
@@ -377,8 +372,8 @@ impl From<Image> for Collider {
 impl Collider {
     pub fn new(image: Image) -> Self {
         let bounding_box = Rect::new_from_x_y(
-            image.position.x.into(),
-            image.position.y.into(),
+            image.position.x,
+            image.position.y,
             image.element.width() as i16,
             image.element.height() as i16,
         );
@@ -428,24 +423,19 @@ pub struct Cell {
 
 impl Cell {
     pub fn rect(&self) -> Rect {
-        Rect::new_from_x_y(
-            self.frame.x.into(),
-            self.frame.y.into(),
-            self.frame.w.into(),
-            self.frame.h.into(),
-        )
+        Rect::new_from_x_y(self.frame.x, self.frame.y, self.frame.w, self.frame.h)
     }
 
     pub fn rect_start_x_y(&self, x: i16, y: i16) -> Rect {
-        Rect::new_from_x_y(x, y, self.frame.w.into(), self.frame.h.into())
+        Rect::new_from_x_y(x, y, self.frame.w, self.frame.h)
     }
 
     pub fn rect_start_x_y_with_size(&self, x: i16, y: i16) -> Rect {
         Rect::new_from_x_y(
             x + self.sprite_source_size.x,
             y + self.sprite_source_size.y,
-            self.frame.w.into(),
-            self.frame.h.into(),
+            self.frame.w,
+            self.frame.h,
         )
     }
 }
@@ -477,12 +467,6 @@ pub struct Sound {
     buffer: AudioBuffer,
 }
 
-impl Sound {
-    pub fn new(buffer: AudioBuffer) -> Sound {
-        Sound { buffer }
-    }
-}
-
 impl Audio {
     pub fn new() -> Result<Self> {
         Ok(Audio {
@@ -498,7 +482,7 @@ impl Audio {
         })
     }
 
-    pub fn play_sound(&self, sound: &Sound, looping: LOOPING) -> Result<AudioBufferSourceNode> {
+    pub fn play_sound(&self, sound: &Sound, looping: Looping) -> Result<AudioBufferSourceNode> {
         sound::play_sound(&self.context, &sound.buffer, looping)
     }
 }
@@ -506,7 +490,7 @@ impl Audio {
 pub fn add_click_handler(elem: HtmlElement) -> UnboundedReceiver<()> {
     let (mut click_sender, click_receiver) = unbounded();
     let on_click = browser::closure_wrap(Box::new(move || {
-        click_sender.start_send(());
+        click_sender.start_send(()).expect("can not send message");
     }) as Box<dyn FnMut()>);
     elem.set_onclick(Some(on_click.as_ref().unchecked_ref()));
     on_click.forget();

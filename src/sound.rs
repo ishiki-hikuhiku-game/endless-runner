@@ -21,7 +21,7 @@ fn connect_with_audio_node(
     destination: &AudioDestinationNode,
 ) -> Result<AudioNode> {
     buffer_source
-        .connect_with_audio_node(&destination)
+        .connect_with_audio_node(destination)
         .map_err(|err| anyhow!("Error connecting audio source to destination {:#?}", err))
 }
 
@@ -30,22 +30,22 @@ pub fn create_track_source(
     buffer: &AudioBuffer,
 ) -> Result<AudioBufferSourceNode> {
     let track_source = create_buffer_source(context)?;
-    track_source.set_buffer(Some(&buffer));
+    track_source.set_buffer(Some(buffer));
     connect_with_audio_node(&track_source, &context.destination())?;
     Ok(track_source)
 }
-pub enum LOOPING {
-    NO,
-    YES,
+pub enum Looping {
+    No,
+    Yes,
 }
 
 pub fn play_sound(
     context: &AudioContext,
     buffer: &AudioBuffer,
-    looping: LOOPING,
+    looping: Looping,
 ) -> Result<AudioBufferSourceNode> {
     let track_source = create_track_source(context, buffer)?;
-    if matches!(looping, LOOPING::YES) {
+    if matches!(looping, Looping::Yes) {
         track_source.set_loop(true);
     }
 
@@ -61,7 +61,7 @@ pub async fn decode_auto_data(
 ) -> Result<AudioBuffer> {
     JsFuture::from(
         context
-            .decode_audio_data(&array_buffer)
+            .decode_audio_data(array_buffer)
             .map_err(|err| anyhow!("Could not decode audio from array buffer {:#?}", err))?,
     )
     .await
