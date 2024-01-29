@@ -1,6 +1,6 @@
 {
-  "author": "You <you@example.com>",
-  "name": "rust-webpack-template",
+  "author": "Tannakaken <tannakaken@gmail.com>",
+  "name": "endless-ranner",
   "version": "0.1.0",
   "scripts": {
     "build": "rimraf dist pkg && webpack",
@@ -10,9 +10,12 @@
   "devDependencies": {
     "@wasm-tool/wasm-pack-plugin": "^1.1.0",
     "copy-webpack-plugin": "^5.0.3",
+    "rimraf": "^3.0.0",
     "webpack": "^4.42.0",
     "webpack-cli": "^3.3.3",
-    "webpack-dev-server": "^3.7.1",
-    "rimraf": "^3.0.0"
+    "webpack-dev-server": "^3.7.1"
+  },
+  "dependencies": {
+    "netlify-cli": "^17.15.3"
   }
 }
