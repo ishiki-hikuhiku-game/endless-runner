@@ -15,7 +15,9 @@ jobs:
       - run: cargo install wasm-pack --version 0.9.1
       - uses: actions/setup-node@v3
         with:
-          node-version: '20.9.0'
+          node-version: "20.9.0"
       - run: npm install
       - run: npm test
-      - run: npm run build
+      # node 17以上はOpenSSLの互換性のためにエラーが出る場合がある。
+      # see https://qiita.com/akitkat/items/f455bbc088a408cbc3a5
+      - run: NODE_OPTIONS='--openssl-legacy-provider' npm run build
