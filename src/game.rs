@@ -144,6 +144,7 @@ enum WalkingEndState {
 impl WalkTheDogState<Walking> {
     fn update(self, key_state: &KeyState) -> WalkingEndState {
         let mut scene = self.scene;
+        scene.count += 1;
         let horizontal_velocity = scene.horizontal_velocity();
         if key_state.is_pressed("ArrowUp") {
             scene.rhb.jump(scene.audio.clone(), scene.jumping_sound());
@@ -242,6 +243,7 @@ pub struct Scene {
     audio: Rc<Audio>,
     sound_collection: HashMap<String, Rc<Sound>>,
     sound_nodes: HashMap<String, Rc<AudioBufferSourceNode>>,
+    count: i32,
 }
 
 const JUMPING_SOUND_FILENAME: &str = "sounds/SFX_Jump_23.mp3";
@@ -317,6 +319,15 @@ impl Scene {
         self.obstacles.iter().for_each(|obstacle| {
             obstacle.draw(renderer);
         });
+        let time = self.count / 60;
+        let minutes = time / 60;
+        let seconds = time % 60;
+        renderer
+            .draw_text(
+                &format!("Time: {:>02}:{:>02}", minutes, seconds),
+                &Point { x: 20, y: 40 },
+            )
+            .expect("can not draw time");
     }
 
     fn reset(scene: Self) -> Self {
@@ -336,6 +347,7 @@ impl Scene {
             audio: scene.audio,
             sound_collection: scene.sound_collection,
             sound_nodes: scene.sound_nodes,
+            count: 0,
         }
     }
 }
@@ -400,6 +412,7 @@ impl Game for WalkTheDog {
                     audio,
                     sound_collection,
                     sound_nodes,
+                    count: 0,
                 };
                 Ok(Box::new(WalkTheDog {
                     machine: Some(WalkTheDogStateMachine::Ready(WalkTheDogState {
@@ -1201,6 +1214,7 @@ mod tests {
             sound_nodes: HashMap::new(),
             stone_element: image.clone(),
             timeline: 0,
+            count: 0,
         };
         let document = browser::document().unwrap();
         let body = document.body().unwrap();
