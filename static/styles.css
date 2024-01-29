@@ -3,6 +3,19 @@
     src: url('kenney_future_narrow-webfont.woff2');
 }
 
+h1 {
+    font-size: large;
+    line-height: 1em;
+}
+
+#description ul {
+    margin: 0;
+}
+
+#credit {
+    margin: 0;
+}
+
 #ui {
     position: absolute;
 }
